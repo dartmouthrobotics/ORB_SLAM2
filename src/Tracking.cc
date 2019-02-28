@@ -24,6 +24,13 @@
 #include<opencv2/core/core.hpp>
 #include<opencv2/features2d/features2d.hpp>
 
+#include"ros/ros.h"
+#include"std_msgs/String.h"
+#include"sensor_msgs/PointCloud.h"
+#include"geometry_msgs/Point32.h"
+#include"sensor_msgs/ChannelFloat32.h"
+#include"ORB_SLAM2/Points.h"
+
 #include"ORBmatcher.h"
 #include"FrameDrawer.h"
 #include"Converter.h"
@@ -36,6 +43,9 @@
 #include<iostream>
 
 #include<mutex>
+
+#include<math.h>
+#include<vector>
 
 
 using namespace std;
@@ -286,6 +296,7 @@ void Tracking::Track()
         mpFrameDrawer->Update(this);
 
         if(mState!=OK)
+            //std::cout << "Tracking.cc: oh we go" << std::endl;
             return;
     }
     else
@@ -501,6 +512,52 @@ void Tracking::Track()
         mlpReferences.push_back(mlpReferences.back());
         mlFrameTimes.push_back(mlFrameTimes.back());
         mlbLost.push_back(mState==LOST);
+    }
+
+    std::cout << "Tracking.cc: camera pose: " << mCurrentFrame.mTcw << std::endl;
+
+
+    // geometry_msgs::Point32 tracked_points;
+    // tracked_points.data.resize(mCurrentFrame.mvpMapPoints.size());
+    // sensor_msgs::ChannelFloat32 tracked_distances;
+    // tracked_distances.data.resize(mCurrentFrame.mvpMapPoints.size());
+
+    ORB_SLAM2::Points msg;
+    printf("%.20g\n", mCurrentFrame.mTimeStamp);
+    msg.frame_id = mCurrentFrame.mTimeStamp;
+    msg.header.stamp = ros::Time(mCurrentFrame.mTimeStamp);
+
+    //std::vector<geometry_msgs::Point> vect_points;
+    bool show_time = true;
+    for(unsigned i = 0; i < mCurrentFrame.mvpMapPoints.size(); i++)
+    {
+        if(mCurrentFrame.mvpMapPoints[i] != 0)
+        {
+            if(show_time)
+            {
+                //std::cout << "Tracking.cc: image id " << mCurrentFrame.mTimeStamp << std::endl;
+                show_time = false;
+            }
+
+            geometry_msgs::Point cur_point;
+            cur_point.x = mCurrentFrame.mvKeys[i].pt.x;
+            cur_point.y = mCurrentFrame.mvKeys[i].pt.y;
+            cur_point.z = 0;
+            msg.points.push_back(cur_point);
+
+            float distance = sqrt( pow(mCurrentFrame.mTcw.at<float>(0) - mCurrentFrame.mvpMapPoints[i]->GetWorldPos().at<float>(0), 2 ) +
+                                    pow(mCurrentFrame.mTcw.at<float>(1) - mCurrentFrame.mvpMapPoints[i]->GetWorldPos().at<float>(1), 2 ) +
+                                    pow(mCurrentFrame.mTcw.at<float>(2) - mCurrentFrame.mvpMapPoints[i]->GetWorldPos().at<float>(2), 2 ) );
+
+            msg.distances.push_back(distance);
+        }
+    }
+
+    if(ros::ok())
+    {
+      //ROS_INFO("%s", msg.data.c_str());
+
+      mpSystem->pub.publish(msg);
     }
 
 }
@@ -916,7 +973,7 @@ bool Tracking::TrackWithMotionModel()
             else if(mCurrentFrame.mvpMapPoints[i]->Observations()>0)
                 nmatchesMap++;
         }
-    }    
+    }
 
     if(mbOnlyTracking)
     {

@@ -25,6 +25,8 @@
 #include<opencv2/core/core.hpp>
 #include<opencv2/features2d/features2d.hpp>
 
+#include<ros/ros.h>
+
 #include"Viewer.h"
 #include"FrameDrawer.h"
 #include"Map.h"
@@ -51,7 +53,7 @@ class LoopClosing;
 class System;
 
 class Tracking
-{  
+{
 
 public:
     Tracking(System* pSys, ORBVocabulary* pVoc, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Map* pMap,
@@ -76,6 +78,9 @@ public:
 
 
 public:
+
+    ros::NodeHandle nodeHandler;
+    ros::Publisher pub;
 
     // Tracking states
     enum eTrackingState{
@@ -169,10 +174,10 @@ protected:
     KeyFrame* mpReferenceKF;
     std::vector<KeyFrame*> mvpLocalKeyFrames;
     std::vector<MapPoint*> mvpLocalMapPoints;
-    
+
     // System
     System* mpSystem;
-    
+
     //Drawers
     Viewer* mpViewer;
     FrameDrawer* mpFrameDrawer;
