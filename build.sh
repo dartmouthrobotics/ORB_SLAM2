@@ -23,9 +23,10 @@ cd Vocabulary
 tar -xf ORBvoc.txt.tar.gz
 cd ..
 
-echo "Configuring and building ORB_SLAM2 ..."
+# Not necessary anymore with catkin_make
+#echo "Configuring and building ORB_SLAM2 ..."
 
-mkdir build
-cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j
+#mkdir build
+#cd build
+#cmake .. -DCMAKE_BUILD_TYPE=Release
+#make -j
