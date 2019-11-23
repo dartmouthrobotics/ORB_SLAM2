@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>ORB_SLAM2</name>
+  <version>1.0.0</version>
+  <description>
+    ORB_SLAM2
+  </description>
+
+  <author email="mroznere@gmail.com">Monika Roznere</author>
+  <maintainer email="mroznere@gmail.com">Monika Roznere</maintainer>
+
+  <!-- One license tag required, multiple allowed, one license per tag -->
+  <!-- Commonly used license strings: -->
+  <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
+  <license>TODO</license>
+
+  <url type="repository">https://gitlab.com/quattrinili/ORB_SLAM2</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>genmsg</depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>message_generation</build_depend>
+
+  <build_export_depend>roscpp</build_export_depend>
+  <build_export_depend>message_generation</build_export_depend>
+
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
+  <depend>geometry_msgs</depend>
+
+</package>

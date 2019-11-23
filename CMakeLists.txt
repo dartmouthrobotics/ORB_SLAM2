@@ -37,9 +37,9 @@ if(NOT OpenCV_FOUND)
    endif()
 endif()
 
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-rosbuild_init()
-rosbuild_genmsg()
+#include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+#rosbuild_init()
+#rosbuild_genmsg()
 
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
@@ -49,10 +49,27 @@ find_package(catkin REQUIRED COMPONENTS
 	std_msgs
 	geometry_msgs
 	sensor_msgs
+        genmsg
 	message_generation)
 
+add_message_files(
+  DIRECTORY msg
+  FILES
+  Points.msg
+)
 
-include_directories(
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs
+)
+
+catkin_package(
+  INCLUDE_DIRS include
+  LIBRARIES ${PROJECT_NAME}
+  CATKIN_DEPENDS message_runtime geometry_msgs
+)
+
+include_directories(include 
 ${PROJECT_SOURCE_DIR}
 ${PROJECT_SOURCE_DIR}/include
 ${EIGEN3_INCLUDE_DIR}
