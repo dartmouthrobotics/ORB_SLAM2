@@ -26,6 +26,9 @@
 #include<thread>
 #include<opencv2/core/core.hpp>
 
+#include"ros/ros.h"
+#include"std_msgs/String.h"
+
 #include "Tracking.h"
 #include "FrameDrawer.h"
 #include "MapDrawer.h"
@@ -35,6 +38,7 @@
 #include "KeyFrameDatabase.h"
 #include "ORBVocabulary.h"
 #include "Viewer.h"
+#include "EchosounderIntegration.h"
 
 namespace ORB_SLAM2
 {
@@ -45,6 +49,7 @@ class Map;
 class Tracking;
 class LocalMapping;
 class LoopClosing;
+class EchosounderIntegration;
 
 class System
 {
@@ -56,10 +61,20 @@ public:
         RGBD=2
     };
 
+    ros::Publisher pub;
+    ros::NodeHandle nh;
+    int counter;
+
+    EchosounderIntegration* echosounderIntegrator;
+
 public:
 
     // Initialize the SLAM system. It launches the Local Mapping, Loop Closing and Viewer threads.
     System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor, const bool bUseViewer = true);
+
+
+    // initializes with the node nodeHandler
+    System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor, ros::NodeHandle* nodeHandler, const bool bUseViewer = true);
 
     // Proccess the given stereo frame. Images must be synchronized and rectified.
     // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
@@ -76,6 +91,9 @@ public:
     // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
     // Returns the camera pose (empty if tracking fails).
     cv::Mat TrackMonocular(const cv::Mat &im, const double &timestamp);
+
+    // Echosounder Integration
+    void IntegrateEchosounder(float echosounderDistance, int echosounderConfidence);
 
     // This stops local mapping thread (map building) and performs only camera tracking.
     void ActivateLocalizationMode();
@@ -174,6 +192,7 @@ private:
     std::vector<MapPoint*> mTrackedMapPoints;
     std::vector<cv::KeyPoint> mTrackedKeyPointsUn;
     std::mutex mMutexState;
+
 };
 
 }// namespace ORB_SLAM

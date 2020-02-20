@@ -24,11 +24,19 @@
 #include<opencv2/core/core.hpp>
 #include<opencv2/features2d/features2d.hpp>
 
+#include"ros/ros.h"
+#include"std_msgs/String.h"
+#include"sensor_msgs/PointCloud.h"
+#include"geometry_msgs/Point32.h"
+#include"sensor_msgs/ChannelFloat32.h"
+#include"ORB_SLAM2/Points.h"
+
 #include"ORBmatcher.h"
 #include"FrameDrawer.h"
 #include"Converter.h"
 #include"Map.h"
 #include"Initializer.h"
+#include"EchosounderIntegration.h"
 
 #include"Optimizer.h"
 #include"PnPsolver.h"
@@ -36,6 +44,9 @@
 #include<iostream>
 
 #include<mutex>
+
+#include<math.h>
+#include<vector>
 
 
 using namespace std;
@@ -286,6 +297,7 @@ void Tracking::Track()
         mpFrameDrawer->Update(this);
 
         if(mState!=OK)
+            //std::cout << "Tracking.cc: oh we go" << std::endl;
             return;
     }
     else
@@ -503,6 +515,52 @@ void Tracking::Track()
         mlbLost.push_back(mState==LOST);
     }
 
+    std::cout << "Tracking.cc: camera pose: " << mCurrentFrame.mTcw << std::endl;
+
+
+    // geometry_msgs::Point32 tracked_points;
+    // tracked_points.data.resize(mCurrentFrame.mvpMapPoints.size());
+    // sensor_msgs::ChannelFloat32 tracked_distances;
+    // tracked_distances.data.resize(mCurrentFrame.mvpMapPoints.size());
+
+    ORB_SLAM2::Points msg;
+    printf("%.20g\n", mCurrentFrame.mTimeStamp);
+    msg.frame_id = mCurrentFrame.mTimeStamp;
+    msg.header.stamp = ros::Time(mCurrentFrame.mTimeStamp);
+
+    //std::vector<geometry_msgs::Point> vect_points;
+    bool show_time = true;
+    for(unsigned i = 0; i < mCurrentFrame.mvpMapPoints.size(); i++)
+    {
+        if(mCurrentFrame.mvpMapPoints[i] != 0)
+        {
+            if(show_time)
+            {
+                //std::cout << "Tracking.cc: image id " << mCurrentFrame.mTimeStamp << std::endl;
+                show_time = false;
+            }
+
+            geometry_msgs::Point cur_point;
+            cur_point.x = mCurrentFrame.mvKeys[i].pt.x;
+            cur_point.y = mCurrentFrame.mvKeys[i].pt.y;
+            cur_point.z = 0;
+            msg.points.push_back(cur_point);
+
+            float distance = sqrt( pow(mCurrentFrame.mTcw.at<float>(0) - mCurrentFrame.mvpMapPoints[i]->GetWorldPos().at<float>(0), 2 ) +
+                                    pow(mCurrentFrame.mTcw.at<float>(1) - mCurrentFrame.mvpMapPoints[i]->GetWorldPos().at<float>(1), 2 ) +
+                                    pow(mCurrentFrame.mTcw.at<float>(2) - mCurrentFrame.mvpMapPoints[i]->GetWorldPos().at<float>(2), 2 ) );
+
+            msg.distances.push_back(distance);
+        }
+    }
+
+    if(ros::ok())
+    {
+      //ROS_INFO("%s", msg.data.c_str());
+
+      mpSystem->pub.publish(msg);
+    }
+
 }
 
 
@@ -565,6 +623,7 @@ void Tracking::MonocularInitialization()
 
     if(!mpInitializer)
     {
+        // std::cout << "HELLLLO MONIKAAAA" << std::endl;
         // Set Reference Frame
         if(mCurrentFrame.mvKeys.size()>100)
         {
@@ -648,14 +707,54 @@ void Tracking::CreateInitialMapMonocular()
     mpMap->AddKeyFrame(pKFini);
     mpMap->AddKeyFrame(pKFcur);
 
+    // Echosounder Integration
+    size_t echosounderMatchIndex = -1;
+    float echosounderDepthRatio = 1.0;
+    float closestPointDist = -1.0;
+    for(size_t i = 0; i < mvIniMatches.size(); i++)
+    {
+        if(mvIniMatches[i] < 0)
+            continue;
+
+        if(mpSystem->echosounderIntegrator->MatchEchosounderReading(pKFini->mvKeys[i], mImGray.rows))
+        {
+            if(-1.0 == closestPointDist)
+            {
+                echosounderMatchIndex = i;
+                closestPointDist = sqrt(pow(mvIniP3D[i].x, 2) + pow(mvIniP3D[i].y, 2) + pow(mvIniP3D[i].z, 2));
+            }
+            else
+            {
+                float curPointDist = sqrt(pow(mvIniP3D[i].x, 2) + pow(mvIniP3D[i].y, 2) + pow(mvIniP3D[i].z, 2));
+                if(curPointDist < closestPointDist)
+                {
+                    echosounderMatchIndex = i;
+                    closestPointDist = curPointDist;
+                }
+            }
+        }
+    }
+    std::cout << "\n\nclosest point: " << mvIniP3D[echosounderMatchIndex] << "\n\n" << std::endl;
+    if(echosounderMatchIndex >= 0)
+        echosounderDepthRatio =  mpSystem->echosounderIntegrator->GetEchosounderDepthRatio(mvIniP3D[echosounderMatchIndex]);
+
     // Create MapPoints and asscoiate to keyframes
     for(size_t i=0; i<mvIniMatches.size();i++)
     {
         if(mvIniMatches[i]<0)
             continue;
 
-        //Create MapPoint.
-        cv::Mat worldPos(mvIniP3D[i]);
+        // Echosounder Integration
+        cv::Point3f iniP3D;
+        if(echosounderMatchIndex >= 0)
+        {
+            iniP3D = mvIniP3D[i] / echosounderDepthRatio;
+        }
+        else
+        iniP3D = mvIniP3D[i];
+
+        // Create MapPoint
+        cv::Mat worldPos(iniP3D);
 
         MapPoint* pMP = new MapPoint(worldPos,pKFcur,mpMap);
 
@@ -916,7 +1015,7 @@ bool Tracking::TrackWithMotionModel()
             else if(mCurrentFrame.mvpMapPoints[i]->Observations()>0)
                 nmatchesMap++;
         }
-    }    
+    }
 
     if(mbOnlyTracking)
     {
@@ -936,9 +1035,127 @@ bool Tracking::TrackLocalMap()
 
     SearchLocalPoints();
 
+    // Echosounder Integration
+    int echosounderMatchIndex = -1;
+    float echosounderDepthRatio = 1.0;
+    if(mpSystem->echosounderIntegrator->IsEsConfident())
+    {
+        float closestPointDist = -1.0;
+        // cur_point.x = mCurrentFrame.mvKeys[i].pt.x;
+        for(int i = 0; i < mCurrentFrame.N; i++)
+        {
+            if(mCurrentFrame.mvpMapPoints[i])
+            {
+                if(!mCurrentFrame.mvbOutlier[i])
+                {
+                    cv::Point3f curMapPoint = cv::Point3f(mCurrentFrame.mvpMapPoints[i]->GetWorldPos().at<float>(0), mCurrentFrame.mvpMapPoints[i]->GetWorldPos().at<float>(1), mCurrentFrame.mvpMapPoints[i]->GetWorldPos().at<float>(2));
+                    if(mpSystem->echosounderIntegrator->MatchEchosounderReading(mCurrentFrame.mvKeys[i], mImGray.rows))
+                    {
+                        if(-1.0 == closestPointDist)
+                        {
+                            echosounderMatchIndex = i;
+                            closestPointDist = sqrt(pow(curMapPoint.x - mCurrentFrame.mTcw.at<float>(0,3), 2) + pow(curMapPoint.y - mCurrentFrame.mTcw.at<float>(1,3), 2) + pow(curMapPoint.z - mCurrentFrame.mTcw.at<float>(2,3), 2));
+                        }
+                        else
+                        {
+                            float curPointDist = sqrt(pow(curMapPoint.x - mCurrentFrame.mTcw.at<float>(0,3), 2) + pow(curMapPoint.y - mCurrentFrame.mTcw.at<float>(1,3), 2) + pow(curMapPoint.z - mCurrentFrame.mTcw.at<float>(2,3), 2));
+                            if(curPointDist < closestPointDist)
+                            {
+                                echosounderMatchIndex = i;
+                                closestPointDist = curPointDist;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if(echosounderMatchIndex >= 0)
+        {
+            std::cout << "\n\ncurrent pose mat: " << mCurrentFrame.mTcw << std::endl;
+            // std::cout << "\n\nclosest point: " << mCurrentFrame.mvpMapPoints[echosounderMatchIndex]->GetWorldPos().at<float>(0) << " "<< mCurrentFrame.mvpMapPoints[echosounderMatchIndex]->GetWorldPos().at<float>(1) << " " << mCurrentFrame.mvpMapPoints[echosounderMatchIndex]->GetWorldPos().at<float>(2) << std::endl;
+            std::cout << "closest map point: " << mCurrentFrame.mvpMapPoints[echosounderMatchIndex]->GetWorldPos() << std::endl;
+            cv::Point3f transformedTargetPoint = cv::Point3f(mCurrentFrame.mvpMapPoints[echosounderMatchIndex]->GetWorldPos().at<float>(0) - mCurrentFrame.mTcw.at<float>(0,3), mCurrentFrame.mvpMapPoints[echosounderMatchIndex]->GetWorldPos().at<float>(1) - mCurrentFrame.mTcw.at<float>(1,3), mCurrentFrame.mvpMapPoints[echosounderMatchIndex]->GetWorldPos().at<float>(2) - mCurrentFrame.mTcw.at<float>(2,3));
+            std::cout << "transformed point: " << transformedTargetPoint.x << " " << transformedTargetPoint.y << " " << transformedTargetPoint.z << std::endl;
+            // std::cout << "camera pose: " << mCurrentFrame.mTcw.at<float>(0,3) << " " << mCurrentFrame.mTcw.at<float>(1,3) << " " << mCurrentFrame.mTcw.at<float>(2,3) << std::endl;
+            std::cout << "ping: " << mpSystem->echosounderIntegrator->GetEchosounderDistance() << std::endl;
+            // cv::Point3f transformedTargetPoint = cv::Point3f(mCurrentFrame.mvpMapPoints[echosounderMatchIndex]->x - mCurrentFrame.mTcw.at<float>(0), mCurrentFrame.mvpMapPoints[echosounderMatchIndex].y - mCurrentFrame.mTcw.at<float>(1), mCurrentFrame.mvpMapPoints[echosounderMatchIndex].z - mCurrentFrame.mTcw.at<float>(2))
+            echosounderDepthRatio =  mpSystem->echosounderIntegrator->GetEchosounderDepthRatio(transformedTargetPoint);
+        }
+
+        // std::cout << "optimized camera pose: " << mCurrentFrame.mTcw.at<float>(0) << " " << mCurrentFrame.mTcw.at<float>(1) << " " << mCurrentFrame.mTcw.at<float>(2) << " " << mCurrentFrame.mTcw.at<float>(3) << std::endl;
+        if(echosounderDepthRatio != 1.0)
+        {
+            for(int i = 0; i < mCurrentFrame.N; i++)
+            {
+                if(mCurrentFrame.mvpMapPoints[i])
+                {
+                    if(!mCurrentFrame.mvbOutlier[i])
+                    {
+                        cv::Point3f transformedPoint = cv::Point3f(mCurrentFrame.mvpMapPoints[i]->GetWorldPos().at<float>(0) - mCurrentFrame.mTcw.at<float>(0,3), mCurrentFrame.mvpMapPoints[i]->GetWorldPos().at<float>(1) - mCurrentFrame.mTcw.at<float>(1,3), mCurrentFrame.mvpMapPoints[i]->GetWorldPos().at<float>(2) - mCurrentFrame.mTcw.at<float>(2,3));
+
+                        cv::Point3f newTransformedPoint = transformedPoint / echosounderDepthRatio;
+
+                        cv::Point3f newPoint = cv::Point3f(newTransformedPoint.x + mCurrentFrame.mTcw.at<float>(0,3), newTransformedPoint.y + mCurrentFrame.mTcw.at<float>(1,3), newTransformedPoint.z + mCurrentFrame.mTcw.at<float>(2,3));
+
+                        cv::Mat newMapPoint = (cv::Mat_<float>(3, 1) << newPoint.x, newPoint.y, newPoint.z);
+                        // std::cout << "current map point: " << mCurrentFrame.mvpMapPoints[i]->GetWorldPos() << std::endl;
+                        mCurrentFrame.mvpMapPoints[i]->SetWorldPos(newMapPoint);
+                        // mCurrentFrame.mvpMapPoints[i]->UpdateNormalAndDepth();
+                        // std::cout << "new map point: " << mCurrentFrame.mvpMapPoints[i]->GetWorldPos() << std::endl;
+                    }
+                }
+            }
+
+            // cv::Point3f cameraVec = cv::Point3f(mCurrentFrame.mTcw.at<float>(0,3) - mCurrentFrame.mvpMapPoints[echosounderMatchIndex]->GetWorldPos().at<float>(0), mCurrentFrame.mTcw.at<float>(1,3) - mCurrentFrame.mvpMapPoints[echosounderMatchIndex]->GetWorldPos().at<float>(1), mCurrentFrame.mTcw.at<float>(2,3) - mCurrentFrame.mvpMapPoints[echosounderMatchIndex]->GetWorldPos().at<float>(2));
+            // // float magnitudeCameraVec = sqrt(pow(cameraVec.x, 2) + pow(cameraVec.y, 2) + pow(cameraVec.z, 2));
+            // // cameraVec = cameraVec / magnitudeCameraVec;
+            // cv::Point3f targetMapPoint = cv::Point3f(mCurrentFrame.mvpMapPoints[echosounderMatchIndex]->GetWorldPos().at<float>(0), mCurrentFrame.mvpMapPoints[echosounderMatchIndex]->GetWorldPos().at<float>(1), mCurrentFrame.mvpMapPoints[echosounderMatchIndex]->GetWorldPos().at<float>(2));
+            // cv::Point3f newCameraPos = targetMapPoint + 1.0 / echosounderDepthRatio * cameraVec;
+            //
+            // // std::cout << ": " << mCurrentFrame.mTcw.at<float>(3) << std::endl;
+            // cv::Mat newCameraPosMat = mCurrentFrame.mTcw.clone();
+            // newCameraPosMat.at<float>(0,3) = newCameraPos.x;
+            // newCameraPosMat.at<float>(1,3) = newCameraPos.y;
+            // newCameraPosMat.at<float>(2,3) = newCameraPos.z;
+            // std::cout << "new camera pose: " << newCameraPosMat << std::endl;
+            // mCurrentFrame.SetPose(newCameraPosMat);
+            // cv::Mat Tc2w = pKFcur->GetPose();
+            // Tc2w.col(3).rowRange(0,3) = Tc2w.col(3).rowRange(0,3)*invMedianDepth;
+            // pKFcur->SetPose(Tc2w);
+        }
+    }
+
+
     // Optimize Pose
     Optimizer::PoseOptimization(&mCurrentFrame);
     mnMatchesInliers = 0;
+
+
+    // if(mpSystem->echosounderIntegrator->IsEsConfident())
+    // {
+    //     // std::cout << "optimized camera pose: " << mCurrentFrame.mTcw.at<float>(0) << " " << mCurrentFrame.mTcw.at<float>(1) << " " << mCurrentFrame.mTcw.at<float>(2) << " " << mCurrentFrame.mTcw.at<float>(3) << std::endl;
+    //     if(echosounderDepthRatio != 1.0)
+    //     {
+    //
+    //         cv::Point3f cameraVec = cv::Point3f(mCurrentFrame.mTcw.at<float>(0,3) - mCurrentFrame.mvpMapPoints[echosounderMatchIndex]->GetWorldPos().at<float>(0), mCurrentFrame.mTcw.at<float>(1,3) - mCurrentFrame.mvpMapPoints[echosounderMatchIndex]->GetWorldPos().at<float>(1), mCurrentFrame.mTcw.at<float>(2,3) - mCurrentFrame.mvpMapPoints[echosounderMatchIndex]->GetWorldPos().at<float>(2));
+    //         // float magnitudeCameraVec = sqrt(pow(cameraVec.x, 2) + pow(cameraVec.y, 2) + pow(cameraVec.z, 2));
+    //         // cameraVec = cameraVec / magnitudeCameraVec;
+    //         cv::Point3f targetMapPoint = cv::Point3f(mCurrentFrame.mvpMapPoints[echosounderMatchIndex]->GetWorldPos().at<float>(0), mCurrentFrame.mvpMapPoints[echosounderMatchIndex]->GetWorldPos().at<float>(1), mCurrentFrame.mvpMapPoints[echosounderMatchIndex]->GetWorldPos().at<float>(2));
+    //         cv::Point3f newCameraPos = targetMapPoint + 1.0 / echosounderDepthRatio * cameraVec;
+    //
+    //         // std::cout << ": " << mCurrentFrame.mTcw.at<float>(3) << std::endl;
+    //         cv::Mat newCameraPosMat = mCurrentFrame.mTcw.clone();
+    //         newCameraPosMat.at<float>(0,3) = newCameraPos.x;
+    //         newCameraPosMat.at<float>(1,3) = newCameraPos.y;
+    //         newCameraPosMat.at<float>(2,3) = newCameraPos.z;
+    //         std::cout << "new camera pose: " << newCameraPosMat << std::endl;
+    //         mCurrentFrame.SetPose(newCameraPosMat);
+    //         // cv::Mat Tc2w = pKFcur->GetPose();
+    //         // Tc2w.col(3).rowRange(0,3) = Tc2w.col(3).rowRange(0,3)*invMedianDepth;
+    //         // pKFcur->SetPose(Tc2w);
+    //     }
+    // }
+
 
     // Update MapPoints Statistics
     for(int i=0; i<mCurrentFrame.N; i++)

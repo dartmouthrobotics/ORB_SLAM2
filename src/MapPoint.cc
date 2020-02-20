@@ -23,6 +23,8 @@
 
 #include<mutex>
 
+#include <iostream>
+
 namespace ORB_SLAM2
 {
 
@@ -37,6 +39,8 @@ MapPoint::MapPoint(const cv::Mat &Pos, KeyFrame *pRefKF, Map* pMap):
 {
     Pos.copyTo(mWorldPos);
     mNormalVector = cv::Mat::zeros(3,1,CV_32F);
+
+    //std::cout << "MapPoint 1" << std::endl;
 
     // MapPoints can be created from Tracking and Local Mapping. This mutex avoid conflicts with id.
     unique_lock<mutex> lock(mpMap->mMutexPointCreation);
