@@ -38,8 +38,10 @@ EchosounderIntegration::EchosounderIntegration(const std::string &strSettingFile
     std::cout << "- projection matrix: " << this->cameraProjection << std::endl;
 }
 
-void EchosounderIntegration::SetEchosounderDistance(float echosounderDistance, int echosounderConfidence)
+
+void EchosounderIntegration::SetEchosounderDistance(const float echosounderDistance, const int echosounderConfidence)
 {
+    // TO DO: does this need to be dvided because the image frame size is cut in half?
     this->esDist = echosounderDistance / 2.0;
     this->esConfidence = echosounderConfidence;
 
@@ -52,12 +54,10 @@ void EchosounderIntegration::SetEchosounderDistance(float echosounderDistance, i
 
     cv::Point3f edgeCirclePoint = centerEsPoint + cv::Point3f(this->esRadius, 0.0, 0.0);
     this->rectifiedEsEdge = GetRectifiedPixelPoint(edgeCirclePoint);
-
-
-    // std::cout << "es center: " << this->rectifiedEsCenter.x << " " << this->rectifiedEsCenter.y << std::endl;
 }
 
-cv::Point2f EchosounderIntegration::GetRectifiedPixelPoint(cv::Point3f cameraPoint)
+
+cv::Point2f EchosounderIntegration::GetRectifiedPixelPoint(const cv::Point3f cameraPoint)
 {
     cv::Mat pointMat = (cv::Mat_<float>(4, 1) << cameraPoint.x, cameraPoint.y, cameraPoint.z, 0.000000);
     cv::Mat pointRectify = this->cameraProjection * pointMat;
@@ -66,7 +66,8 @@ cv::Point2f EchosounderIntegration::GetRectifiedPixelPoint(cv::Point3f cameraPoi
     return cv::Point2f(pixel_x, pixel_y);
 }
 
-bool EchosounderIntegration::MatchEchosounderReading(cv::KeyPoint potentialFeaturePoint, int imageRows)
+
+bool EchosounderIntegration::MatchEchosounderReading(const cv::KeyPoint potentialFeaturePoint, const int imageRows)
 {
     float imageResize = this->originalHeight / imageRows;
 
@@ -84,42 +85,48 @@ bool EchosounderIntegration::MatchEchosounderReading(cv::KeyPoint potentialFeatu
 }
 
 
-float EchosounderIntegration::GetEchosounderDepthRatio(cv::Point3f targetPoint)
+float EchosounderIntegration::GetEchosounderDepthRatio(const cv::Mat targetPointMat)
 {
-    float depthError = 100.0;
+    // Optimize position of map point such that its distance from the echosounder approximately
+    //      matches with the echosounder's reading.
+
+    float distError = 100.0;
     float deltaError = 0.05;
     int maxIterations = 20000;
     int curIteration = 0;
+
+    cv::Point3f targetPoint = cv::Point3f(targetPointMat.at<float>(0), targetPointMat.at<float>(1), targetPointMat.at<float>(2));
     cv::Point3f optTargetPoint = targetPoint;
-    while((deltaError <= abs(depthError)) && curIteration < maxIterations)
+
+    while((deltaError <= fabs(distError)) && curIteration < maxIterations)
     {
-        float curDepth = sqrt(pow(optTargetPoint.x - this->esPosition.x, 2) + pow(optTargetPoint.y - this->esPosition.y, 2) + pow(optTargetPoint.z - this->esPosition.z, 2));
-        depthError = curDepth - this->esDist;
-        // std::cout << "depth error: " << depthError << std::endl;
-        if(deltaError < depthError || deltaError < -depthError)
+        // Calculate distance of map point to echosounder
+        float curDist = norm(optTargetPoint - this->esPosition);
+        // Error between current calculated distance and the echosoudner reading
+        distError = curDist - this->esDist;
+
+        if(deltaError < fabs(distError))
         {
-            // std::cout << "updating target point" << std::endl;
-            float magnitude = sqrt(pow(optTargetPoint.x, 2) + pow(optTargetPoint.y, 2) + pow(optTargetPoint.z, 2));
-            if(0 < depthError)
+            if(0 < distError)
             {
-                optTargetPoint = optTargetPoint - 0.01 * optTargetPoint / magnitude;
+                optTargetPoint = optTargetPoint - 0.01 * optTargetPoint / norm(optTargetPoint);
             }
             else
             {
-                optTargetPoint = optTargetPoint + 0.01 * optTargetPoint / magnitude;
+                optTargetPoint = optTargetPoint + 0.01 * optTargetPoint / norm(optTargetPoint);
             }
         }
         curIteration++;
     }
-    // std::cout << "iterations: " << curIteration << std::endl;
-    // std::cout << "optimized target point: " << optTargetPoint.x << " " << optTargetPoint.y << " " << optTargetPoint.z << std::endl;
 
+    float firstDist = norm(targetPoint);
+    float finalDist = norm(optTargetPoint);
 
-    float firstDist = sqrt(pow(targetPoint.x, 2) + pow(targetPoint.y, 2) + pow(targetPoint.z, 2));
-    float finalDist = sqrt(pow(optTargetPoint.x, 2) + pow(optTargetPoint.y, 2) + pow(optTargetPoint.z, 2));
-
-    float depthRatio = firstDist / finalDist;
-    std::cout << "depth ratio: " << depthRatio << std::endl;
+    float depthRatio = finalDist / firstDist;
+    std::cout << "\n\nEchosounder: " << this->esDist << std::endl;
+    std::cout << "First dist: " << firstDist << std::endl;
+    std::cout << "Final dist: " << finalDist << std::endl;
+    std::cout << "Depth ratio: " << depthRatio << std::endl;
 
     return depthRatio;
 }

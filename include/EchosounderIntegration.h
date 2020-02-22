@@ -13,20 +13,20 @@ class EchosounderIntegration
 public:
     EchosounderIntegration(const std::string &strSettingFile);
 
-    void SetEchosounderDistance(float echosounderDistance, int echosounderConfidence);
+    void SetEchosounderDistance(const float echosounderDistance, const int echosounderConfidence);
 
-    bool MatchEchosounderReading(cv::KeyPoint potentialPoint, int imageRows);
+    bool MatchEchosounderReading(const cv::KeyPoint potentialPoint, const int imageRows);
     // bool MatchEchosounderReading(int potentialPoint);
 
-    float GetEchosounderDepthRatio(cv::Point3f targetPoint);
+    float GetEchosounderDepthRatio(const cv::Mat targetPointMat);
 
-    cv::Point2f GetRectifiedPixelPoint(cv::Point3f cameraPoint);
+    cv::Point2f GetRectifiedPixelPoint(const cv::Point3f cameraPoint);
 
     float GetEchosounderDistance(){return esDist;}
 
     bool IsEsConfident(){return esConfidence >= threshConfidence;}
 
-    void SaveEsEdgeConstraint(int echosounderMatchIndex){this->esTargetMapIndex = echosounderMatchIndex;}
+    void SaveEsEdgeConstraint(const int echosounderMatchIndex){this->esTargetMapIndex = echosounderMatchIndex;}
 
     int GetEsEdgeIndex(){return this->esTargetMapIndex;}
 
