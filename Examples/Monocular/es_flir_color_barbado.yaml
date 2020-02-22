@@ -1,0 +1,83 @@
+%YAML:1.0
+
+#--------------------------------------------------------------------------------------------
+# Echosounder Parameters. Adjust them!
+#--------------------------------------------------------------------------------------------
+
+# Echosounder position relative to camera (in camera coordinate system)
+Echosounder.position.x: -0.133
+Echosounder.position.y: 0.045
+Echosounder.position.z: -0.057
+
+# Echosounder directional vector (in camera coordinate system)
+Echosounder.direction.x: 0.02386
+Echosounder.direction.y: 0.0655
+Echosounder.direction.z: 0.99756
+
+# Echosounder angle (in radians)
+Echosounder.angle: 0.2618
+
+#--------------------------------------------------------------------------------------------
+# Camera Parameters. Adjust them!
+#--------------------------------------------------------------------------------------------
+
+# Image frame size
+Camera.height: 1440
+Camera.width: 1080
+
+# Camera calibration and distortion parameters (OpenCV)
+Camera.fx: 1156.369411
+Camera.fy: 1158.584619
+Camera.cx: 558.795626
+Camera.cy: 709.913462
+
+Camera.k1: -0.301024
+Camera.k2: 0.112090
+Camera.p1: -0.000707
+Camera.p2: 0.000190
+
+# Projection matrix
+Camera.proj00: 1076.644043
+Camera.proj02: 561.841742
+Camera.proj11: 1016.001709
+Camera.proj12: 705.57506
+
+# Camera frames per second
+Camera.fps: 30.0
+
+# Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
+Camera.RGB: 1
+
+#--------------------------------------------------------------------------------------------
+# ORB Parameters
+#--------------------------------------------------------------------------------------------
+
+# ORB Extractor: Number of features per image
+ORBextractor.nFeatures: 2000
+
+# ORB Extractor: Scale factor between levels in the scale pyramid
+ORBextractor.scaleFactor: 1.2
+
+# ORB Extractor: Number of levels in the scale pyramid
+ORBextractor.nLevels: 8
+
+# ORB Extractor: Fast threshold
+# Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
+# Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
+# You can lower these values if your images have low contrast
+ORBextractor.iniThFAST: 20
+ORBextractor.minThFAST: 7
+
+#--------------------------------------------------------------------------------------------
+# Viewer Parameters
+#--------------------------------------------------------------------------------------------
+Viewer.KeyFrameSize: 0.1
+Viewer.KeyFrameLineWidth: 1
+Viewer.GraphLineWidth: 1
+Viewer.PointSize:2
+Viewer.CameraSize: 0.15
+Viewer.CameraLineWidth: 2
+Viewer.ViewpointX: 0
+Viewer.ViewpointY: -10
+Viewer.ViewpointZ: -0.1
+Viewer.ViewpointF: 2000
