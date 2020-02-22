@@ -98,6 +98,11 @@ public:
     // Backprojects a keypoint (if stereo/depth info available) into 3D world coordinates.
     cv::Mat UnprojectStereo(const int &i);
 
+    // Set echosounder point.
+    void SetEchoSounderPoint(const cv::Point3f &p){
+        mEchoSounderPoint = p;
+    }
+
 public:
     // Vocabulary used for relocalization.
     ORBVocabulary* mpORBvocabulary;
@@ -151,6 +156,10 @@ public:
 
     // MapPoints associated to keypoints, NULL pointer if no association.
     std::vector<MapPoint*> mvpMapPoints;
+
+    // TODO Association with mappoints.
+    // 3D point corresponding to echosounder in camera reference frame.
+    cv::Point3f mEchoSounderPoint;
 
     // Flag to identify outlier associations.
     std::vector<bool> mvbOutlier;

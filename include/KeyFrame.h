@@ -116,6 +116,11 @@ public:
         return pKF1->mnId<pKF2->mnId;
     }
 
+    // Set echosounder point.
+    void SetEchoSounderPoint(const cv::Point3f &p){
+        mEchoSounderPoint = p;
+    }
+
 
     // The following variables are accesed from only 1 thread or never change (no mutex needed).
 public:
@@ -188,6 +193,9 @@ public:
     const int mnMaxY;
     const cv::Mat mK;
 
+    // TODO Association with mappoints.
+    // 3D point corresponding to echosounder in camera reference frame.
+    cv::Point3f mEchoSounderPoint;
 
     // The following variables need to be accessed trough a mutex to be thread safe.
 protected:
@@ -201,6 +209,8 @@ protected:
 
     // MapPoints associated to keypoints
     std::vector<MapPoint*> mvpMapPoints;
+
+    
 
     // BoW
     KeyFrameDatabase* mpKeyFrameDB;

@@ -24,7 +24,7 @@ public:
 
     float GetEchosounderDistance(){return esDist;}
 
-    bool IsEsConfident(){return esConfidence >= threshConfidence;}
+    bool IsEsConfident(){return isEchosounderUsed && esConfidence >= threshConfidence;}
 
     void SaveEsEdgeConstraint(const int &echosounderMatchIndex){this->esTargetMapIndex = echosounderMatchIndex;}
 
@@ -34,6 +34,7 @@ public:
     cv::Point3f ProjectSonarPoint();
 
 private:
+    bool isEchosounderUsed;
 
     float esDist;
     int esConfidence;

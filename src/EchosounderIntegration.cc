@@ -11,6 +11,8 @@ EchosounderIntegration::EchosounderIntegration(const std::string &strSettingFile
 {
     cv::FileStorage fSettings(strSettingFile, cv::FileStorage::READ);
 
+    this->isEchosounderUsed = static_cast<int>(fSettings["Echosounder.enable"]) != 0; // Workaround to enable/disable echosounder.
+
     this->esPosition = cv::Point3f(fSettings["Echosounder.position.x"], fSettings["Echosounder.position.y"], fSettings["Echosounder.position.z"]);
     this->esDirection = cv::Point3f(fSettings["Echosounder.direction.x"], fSettings["Echosounder.direction.y"], fSettings["Echosounder.direction.z"]);
     this->esAngle = fSettings["Echosounder.angle"];
@@ -40,7 +42,7 @@ EchosounderIntegration::EchosounderIntegration(const std::string &strSettingFile
     // Calculate transformation matrix camera echosounder.
     cv::Point3f up = cv::Point3f(0, 1, 0);
 
-    cv::Mat transformation_matrix = cv::Mat::zeros(cv::Size(4, 4), CV_32FC1);
+    cTe = cv::Mat::zeros(cv::Size(4, 4), CV_32FC1);
 
     // TODO simplify with Mat instead of Point.
     // r3 is esDirection.
@@ -59,11 +61,13 @@ EchosounderIntegration::EchosounderIntegration(const std::string &strSettingFile
     cTe.at<float>(2,1) = this->esDirection.y;
     cTe.at<float>(2,2) = this->esDirection.z;
 
-    cTe.at<float>(3,0) = this->esPosition.x;
-    cTe.at<float>(3,1) = this->esPosition.y;
-    cTe.at<float>(3,2) = this->esPosition.z;
+    cTe.at<float>(0,3) = this->esPosition.x;
+    cTe.at<float>(1,3) = this->esPosition.y;
+    cTe.at<float>(2,3) = this->esPosition.z;
 
     cTe.at<float>(3,3) = 1.0;
+
+    std::cout << "cTe " << this->cTe << std::endl;
 }
 
 
@@ -162,10 +166,10 @@ float EchosounderIntegration::GetEchosounderDepthRatio(const cv::Mat &targetPoin
 cv::Point3f EchosounderIntegration::ProjectSonarPoint()
 {
     // Assumes that the point is coming from the center line.
-    cv::Mat echosounder_point = cv::Mat::zeros(cv::Size(4, 1), CV_32FC1);
-    echosounder_point.at<float>(2, 0) = this->esDist;
-    echosounder_point.at<float>(1, 0) = 1.0;
-    
+    cv::Mat echosounder_point = cv::Mat::zeros(cv::Size(1, 4), CV_32FC1);
+    echosounder_point.at<float>(0, 2) = this->esDist;
+    echosounder_point.at<float>(0, 3) = 1.0;
+
     cv::Mat camera_point = this->cTe * echosounder_point;
 
     return cv::Point3f(camera_point.at<float>(0,0), camera_point.at<float>(1,0), camera_point.at<float>(2,0));

@@ -1062,6 +1062,9 @@ bool Tracking::TrackWithMotionModel()
 
             // Calculate depth ratio: current distance / approximate true distance (of target point to camera)
             echosounderDepthRatio =  mpSystem->echosounderIntegrator->GetEchosounderDepthRatio(transformedTargetPoint);
+
+            // Set the echosounder point for the frame -- to visualize after.
+            mCurrentFrame.mEchoSounderPoint = mpSystem->echosounderIntegrator->ProjectSonarPoint();
         }
 
         // If the scene needs to correct the depth scale
@@ -1323,6 +1326,7 @@ void Tracking::CreateNewKeyFrame()
         return;
 
     KeyFrame* pKF = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB);
+    pKF->SetEchoSounderPoint(mCurrentFrame.mEchoSounderPoint); // including the echosounder point.
 
     mpReferenceKF = pKF;
     mCurrentFrame.mpReferenceKF = pKF;

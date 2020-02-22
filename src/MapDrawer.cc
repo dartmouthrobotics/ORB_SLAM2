@@ -40,7 +40,21 @@ MapDrawer::MapDrawer(Map* pMap, const string &strSettingPath):mpMap(pMap)
     mCameraLineWidth = fSettings["Viewer.CameraLineWidth"];
 
 }
-
+// Draw Echosounder Point
+void MapDrawer::DrawEchosounderPoint(const cv::Point3f &echosounder_point, const cv::Mat &Twc)
+{
+    cv::Mat echosounder_homogeneous_point = cv::Mat::zeros(cv::Size(1, 4), CV_32FC1);
+    echosounder_homogeneous_point.at<float>(0, 0) = echosounder_point.x;
+    echosounder_homogeneous_point.at<float>(0, 1) = echosounder_point.y;
+    echosounder_homogeneous_point.at<float>(0, 2) = echosounder_point.z;
+    echosounder_homogeneous_point.at<float>(0, 3) = 1.0;
+    cv::Mat world_point = Twc * echosounder_homogeneous_point;
+    glPointSize(mPointSize);
+    glBegin(GL_POINTS);
+    glColor3f(0.0,1.0,1.0);
+    glVertex3f(world_point.at<float>(0,0),world_point.at<float>(1,0),world_point.at<float>(2,0));
+    glEnd();
+}
 void MapDrawer::DrawMapPoints()
 {
     const vector<MapPoint*> &vpMPs = mpMap->GetAllMapPoints();
@@ -94,6 +108,8 @@ void MapDrawer::DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph)
         {
             KeyFrame* pKF = vpKFs[i];
             cv::Mat Twc = pKF->GetPoseInverse().t();
+
+            DrawEchosounderPoint(pKF->mEchoSounderPoint, Twc);
 
             glPushMatrix();
 
