@@ -197,7 +197,12 @@ void FrameDrawer::Update(Tracking *pTracker)
             }
         }
     }
+    // TODO Association with mappoints.
+    // 3D point corresponding to echosounder in camera reference frame.
+    mEchoSounderPoint = pTracker->mCurrentFrame.mEchoSounderPoint;
     mState=static_cast<int>(pTracker->mLastProcessedState);
+
+    
 }
 
 } //namespace ORB_SLAM

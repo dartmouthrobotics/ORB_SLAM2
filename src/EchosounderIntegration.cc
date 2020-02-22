@@ -175,5 +175,16 @@ cv::Point3f EchosounderIntegration::ProjectSonarPoint()
     return cv::Point3f(camera_point.at<float>(0,0), camera_point.at<float>(1,0), camera_point.at<float>(2,0));
 }
 
+cv::Point3f EchosounderIntegration::transformSonarPointToWorld(const cv::Point3f &echosounder_point, const cv::Mat &Twc)
+{
+    cv::Mat echosounder_homogeneous_point = cv::Mat::zeros(cv::Size(1, 4), CV_32FC1);
+    echosounder_homogeneous_point.at<float>(0, 0) = echosounder_point.x;
+    echosounder_homogeneous_point.at<float>(0, 1) = echosounder_point.y;
+    echosounder_homogeneous_point.at<float>(0, 2) = echosounder_point.z;
+    echosounder_homogeneous_point.at<float>(0, 3) = 1.0;
+    cv::Mat world_point = Twc * echosounder_homogeneous_point;
+
+    return cv::Point3f(world_point.at<float>(0,0), world_point.at<float>(1,0), world_point.at<float>(2,0));
+}
 
 }  //namespace ORB_SLAM

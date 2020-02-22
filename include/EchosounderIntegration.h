@@ -33,6 +33,9 @@ public:
     /* Project sonar measurement to get the 3D point in the camera reference frame. */
     cv::Point3f ProjectSonarPoint();
 
+    /* Transform sonar point to the world reference frame. */
+    cv::Point3f transformSonarPointToWorld(const cv::Point3f &echosounder_point, const cv::Mat &Twc);
+
 private:
     bool isEchosounderUsed;
 

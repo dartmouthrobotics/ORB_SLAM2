@@ -1058,13 +1058,15 @@ bool Tracking::TrackWithMotionModel()
                                                     1.0);
 
             // Transform target point into camera's reference frame
-            cv::Mat transformedTargetPoint = mCurrentFrame.mTcw.inv() * targetPoint;
+            cv::Mat transformedTargetPoint = mCurrentFrame.mTcw * targetPoint;
 
             // Calculate depth ratio: current distance / approximate true distance (of target point to camera)
             echosounderDepthRatio =  mpSystem->echosounderIntegrator->GetEchosounderDepthRatio(transformedTargetPoint);
 
             // Set the echosounder point for the frame -- to visualize after.
             mCurrentFrame.mEchoSounderPoint = mpSystem->echosounderIntegrator->ProjectSonarPoint();
+
+            mCurrentFrame.mEchoSounderPoint = mpSystem->echosounderIntegrator->transformSonarPointToWorld(mCurrentFrame.mEchoSounderPoint, mCurrentFrame.mTcw.inv());
         }
 
         // If the scene needs to correct the depth scale

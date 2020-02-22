@@ -48,6 +48,10 @@ public:
     // Draw last processed frame.
     cv::Mat DrawFrame();
 
+    // TODO Association with mappoints.
+    // 3D point corresponding to echosounder in camera reference frame.
+    cv::Point3f mEchoSounderPoint;
+
 protected:
 
     void DrawTextInfo(cv::Mat &im, int nState, cv::Mat &imText);

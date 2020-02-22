@@ -45,7 +45,7 @@ public:
     void SetReferenceKeyFrame(KeyFrame *pKF);
     void GetCurrentOpenGLCameraMatrix(pangolin::OpenGlMatrix &M);
 
-    void DrawEchosounderPoint(const cv::Point3f &echosounder_point, const cv::Mat &Twc); // To draw Echosounder point
+    void DrawEchosounderPoint(const cv::Point3f &echosounder_point); // To draw Echosounder point
 
 private:
 
