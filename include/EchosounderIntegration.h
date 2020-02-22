@@ -13,23 +13,25 @@ class EchosounderIntegration
 public:
     EchosounderIntegration(const std::string &strSettingFile);
 
-    void SetEchosounderDistance(const float echosounderDistance, const int echosounderConfidence);
+    void SetEchosounderDistance(const float &echosounderDistance, const int &echosounderConfidence);
 
-    bool MatchEchosounderReading(const cv::KeyPoint potentialPoint, const int imageRows);
+    bool MatchEchosounderReading(const cv::KeyPoint &potentialPoint, const int &imageRows);
     // bool MatchEchosounderReading(int potentialPoint);
 
-    float GetEchosounderDepthRatio(const cv::Mat targetPointMat);
+    float GetEchosounderDepthRatio(const cv::Mat &targetPointMat);
 
-    cv::Point2f GetRectifiedPixelPoint(const cv::Point3f cameraPoint);
+    cv::Point2f GetRectifiedPixelPoint(const cv::Point3f &cameraPoint);
 
     float GetEchosounderDistance(){return esDist;}
 
     bool IsEsConfident(){return esConfidence >= threshConfidence;}
 
-    void SaveEsEdgeConstraint(const int echosounderMatchIndex){this->esTargetMapIndex = echosounderMatchIndex;}
+    void SaveEsEdgeConstraint(const int &echosounderMatchIndex){this->esTargetMapIndex = echosounderMatchIndex;}
 
     int GetEsEdgeIndex(){return this->esTargetMapIndex;}
 
+    /* Project sonar measurement to get the 3D point in the camera reference frame. */
+    cv::Point3f ProjectSonarPoint();
 
 private:
 
@@ -47,6 +49,7 @@ private:
     cv::Mat cameraProjection;
     cv::Point3f esPosition;
     cv::Point3f esDirection;
+    cv::Mat cTe; // Transformation matrix: parent camera, child echosounder.
 
 };
 

@@ -36,10 +36,38 @@ EchosounderIntegration::EchosounderIntegration(const std::string &strSettingFile
 
     std::cout << "\nExtra camera parameters:" << std::endl;
     std::cout << "- projection matrix: " << this->cameraProjection << std::endl;
+
+    // Calculate transformation matrix camera echosounder.
+    cv::Point3f up = cv::Point3f(0, 1, 0);
+
+    cv::Mat transformation_matrix = cv::Mat::zeros(cv::Size(4, 4), CV_32FC1);
+
+    // TODO simplify with Mat instead of Point.
+    // r3 is esDirection.
+    cv::Point3f r1 = up.cross(this->esDirection);
+    cv::Point3f r2 = this->esDirection.cross(r1);
+
+    cTe.at<float>(0,0) = r1.x;
+    cTe.at<float>(0,1) = r1.y;
+    cTe.at<float>(0,2) = r1.z;
+
+    cTe.at<float>(1,0) = r2.x;
+    cTe.at<float>(1,1) = r2.y;
+    cTe.at<float>(1,2) = r2.z;
+
+    cTe.at<float>(2,0) = this->esDirection.x;
+    cTe.at<float>(2,1) = this->esDirection.y;
+    cTe.at<float>(2,2) = this->esDirection.z;
+
+    cTe.at<float>(3,0) = this->esPosition.x;
+    cTe.at<float>(3,1) = this->esPosition.y;
+    cTe.at<float>(3,2) = this->esPosition.z;
+
+    cTe.at<float>(3,3) = 1.0;
 }
 
 
-void EchosounderIntegration::SetEchosounderDistance(const float echosounderDistance, const int echosounderConfidence)
+void EchosounderIntegration::SetEchosounderDistance(const float &echosounderDistance, const int &echosounderConfidence)
 {
     // TO DO: does this need to be dvided because the image frame size is cut in half?
     this->esDist = echosounderDistance / 2.0;
@@ -57,7 +85,7 @@ void EchosounderIntegration::SetEchosounderDistance(const float echosounderDista
 }
 
 
-cv::Point2f EchosounderIntegration::GetRectifiedPixelPoint(const cv::Point3f cameraPoint)
+cv::Point2f EchosounderIntegration::GetRectifiedPixelPoint(const cv::Point3f &cameraPoint)
 {
     cv::Mat pointMat = (cv::Mat_<float>(4, 1) << cameraPoint.x, cameraPoint.y, cameraPoint.z, 0.000000);
     cv::Mat pointRectify = this->cameraProjection * pointMat;
@@ -67,7 +95,7 @@ cv::Point2f EchosounderIntegration::GetRectifiedPixelPoint(const cv::Point3f cam
 }
 
 
-bool EchosounderIntegration::MatchEchosounderReading(const cv::KeyPoint potentialFeaturePoint, const int imageRows)
+bool EchosounderIntegration::MatchEchosounderReading(const cv::KeyPoint &potentialFeaturePoint, const int &imageRows)
 {
     float imageResize = this->originalHeight / imageRows;
 
@@ -85,7 +113,7 @@ bool EchosounderIntegration::MatchEchosounderReading(const cv::KeyPoint potentia
 }
 
 
-float EchosounderIntegration::GetEchosounderDepthRatio(const cv::Mat targetPointMat)
+float EchosounderIntegration::GetEchosounderDepthRatio(const cv::Mat &targetPointMat)
 {
     // Optimize position of map point such that its distance from the echosounder approximately
     //      matches with the echosounder's reading.
@@ -130,5 +158,18 @@ float EchosounderIntegration::GetEchosounderDepthRatio(const cv::Mat targetPoint
 
     return depthRatio;
 }
+
+cv::Point3f EchosounderIntegration::ProjectSonarPoint()
+{
+    // Assumes that the point is coming from the center line.
+    cv::Mat echosounder_point = cv::Mat::zeros(cv::Size(4, 1), CV_32FC1);
+    echosounder_point.at<float>(2, 0) = this->esDist;
+    echosounder_point.at<float>(1, 0) = 1.0;
+    
+    cv::Mat camera_point = this->cTe * echosounder_point;
+
+    return cv::Point3f(camera_point.at<float>(0,0), camera_point.at<float>(1,0), camera_point.at<float>(2,0));
+}
+
 
 }  //namespace ORB_SLAM

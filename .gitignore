@@ -4,11 +4,12 @@ Examples/Monocular/mono_kitti
 Examples/Monocular/mono_tum
 Examples/RGB-D/rgbd_tum
 Examples/ROS/ORB_SLAM2/CMakeLists.txt.user
-Examples/ROS/ORB_SLAM2/Mono
-Examples/ROS/ORB_SLAM2/MonoAR
-Examples/ROS/ORB_SLAM2/RGBD
-Examples/ROS/ORB_SLAM2/Stereo
-Examples/ROS/ORB_SLAM2/build/
+Examples/ROS/ORB_SLAM2ROS/Mono
+Examples/ROS/ORB_SLAM2ROS/MonoEcho
+Examples/ROS/ORB_SLAM2ROS/MonoAR
+Examples/ROS/ORB_SLAM2ROS/RGBD
+Examples/ROS/ORB_SLAM2ROS/Stereo
+Examples/ROS/ORB_SLAM2ROS/build/
 Examples/Stereo/stereo_euroc
 Examples/Stereo/stereo_kitti
 KeyFrameTrajectory.txt
