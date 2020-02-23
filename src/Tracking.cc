@@ -769,7 +769,7 @@ void Tracking::CreateInitialMapMonocular()
             iniP3D = mvIniP3D[i] * echosounderDepthRatio;
         }
         else
-        iniP3D = mvIniP3D[i];
+            iniP3D = mvIniP3D[i];
 
         // Create MapPoint
         cv::Mat worldPos(iniP3D);
@@ -803,29 +803,32 @@ void Tracking::CreateInitialMapMonocular()
     Optimizer::GlobalBundleAdjustemnt(mpMap,20);
 
     // Set median depth to 1
-    float medianDepth = pKFini->ComputeSceneMedianDepth(2);
-    float invMedianDepth = 1.0f/medianDepth;
-
-    if(medianDepth<0 || pKFcur->TrackedMapPoints(1)<100)
+    if(echosounderMatchIndex < 0)
     {
-        cout << "Wrong initialization, reseting..." << endl;
-        Reset();
-        return;
-    }
+        float medianDepth = pKFini->ComputeSceneMedianDepth(2);
+        float invMedianDepth = 1.0f/medianDepth;
 
-    // Scale initial baseline
-    cv::Mat Tc2w = pKFcur->GetPose();
-    Tc2w.col(3).rowRange(0,3) = Tc2w.col(3).rowRange(0,3)*invMedianDepth;
-    pKFcur->SetPose(Tc2w);
-
-    // Scale points
-    vector<MapPoint*> vpAllMapPoints = pKFini->GetMapPointMatches();
-    for(size_t iMP=0; iMP<vpAllMapPoints.size(); iMP++)
-    {
-        if(vpAllMapPoints[iMP])
+        if(medianDepth<0 || pKFcur->TrackedMapPoints(1)<100)
         {
-            MapPoint* pMP = vpAllMapPoints[iMP];
-            pMP->SetWorldPos(pMP->GetWorldPos()*invMedianDepth);
+            cout << "Wrong initialization, reseting..." << endl;
+            Reset();
+            return;
+        }
+
+        // Scale initial baseline
+        cv::Mat Tc2w = pKFcur->GetPose();
+        Tc2w.col(3).rowRange(0,3) = Tc2w.col(3).rowRange(0,3)*invMedianDepth;
+        pKFcur->SetPose(Tc2w);
+
+        // Scale points
+        vector<MapPoint*> vpAllMapPoints = pKFini->GetMapPointMatches();
+        for(size_t iMP=0; iMP<vpAllMapPoints.size(); iMP++)
+        {
+            if(vpAllMapPoints[iMP])
+            {
+                MapPoint* pMP = vpAllMapPoints[iMP];
+                pMP->SetWorldPos(pMP->GetWorldPos()*invMedianDepth);
+            }
         }
     }
 
