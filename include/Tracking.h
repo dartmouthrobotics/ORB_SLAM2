@@ -150,6 +150,10 @@ protected:
     bool NeedNewKeyFrame();
     void CreateNewKeyFrame();
 
+    // Return depth ratio of the camera point that matches with the echosounder.
+    float FindDepthRatioPointCameraEchosounderInit(const std::vector<int> &matches, const std::vector<cv::KeyPoint> &keypoints, const std::vector<cv::Point3f> &points);
+    float FindDepthRatioPointCameraEchosounderTrack();
+
     // In case of performing only localization, this flag is true when there are no matches to
     // points in the map. Still tracking will continue if there are enough matches with temporal points.
     // In that case we are doing visual odometry. The system will try to do relocalization to recover
