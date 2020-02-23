@@ -36,8 +36,8 @@ public:
     /* Transform sonar point to the world reference frame. */
     cv::Point3f transformSonarPointToWorld(const cv::Point3f &echosounder_point, const cv::Mat &Twc);
 
-private:
     bool isEchosounderUsed;
+private:
 
     float esDist;
     int esConfidence;
