@@ -831,6 +831,14 @@ void Tracking::CreateInitialMapMonocular()
             }
         }
     }
+    else
+    {
+        // Scale initial baseline with echosounder depth ratio.
+        cv::Mat Tc2w = pKFcur->GetPose();
+        Tc2w.col(3).rowRange(0,3) = Tc2w.col(3).rowRange(0,3)*echosounderDepthRatio;
+        pKFcur->SetPose(Tc2w);
+    }
+    
 
     mpLocalMapper->InsertKeyFrame(pKFini);
     mpLocalMapper->InsertKeyFrame(pKFcur);

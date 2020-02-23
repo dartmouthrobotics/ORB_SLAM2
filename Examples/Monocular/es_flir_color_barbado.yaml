@@ -45,7 +45,7 @@ Camera.proj11: 1016.001709
 Camera.proj12: 705.57506
 
 # Camera frames per second
-Camera.fps: 30.0
+Camera.fps: 15.0
 
 # Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
 Camera.RGB: 1
