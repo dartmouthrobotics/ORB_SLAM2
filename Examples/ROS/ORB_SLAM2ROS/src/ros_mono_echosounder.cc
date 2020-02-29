@@ -113,11 +113,11 @@ void ImageDistanceGrabber::GrabImageAndDistance(const sensor_msgs::ImageConstPtr
         ROS_ERROR("cv_bridge exception: %s", e.what());
         return;
     }
-    cv::Mat cur_image;
-    // cv::transpose(cv_ptr->image, cur_image);
-    // flip(image, image, +1);
-    cv::rotate(cv_ptr->image, cur_image, cv::ROTATE_90_CLOCKWISE);
-    //std::cout << "ros_mono.cc: " << cv_ptr->header.stamp.toSec() << std::endl;echo_sounder_msg->distance
+    //cv::Mat cur_image;
+
+    //cv::rotate(cv_ptr->image, cur_image, cv::ROTATE_90_CLOCKWISE);
+
     mpSLAM->IntegrateEchosounder(echosounder_msg->distance, echosounder_msg->confidence);
-    mpSLAM->TrackMonocular(cur_image, cv_ptr->header.stamp.toSec());
+    //mpSLAM->TrackMonocular(cur_image, cv_ptr->header.stamp.toSec());
+    mpSLAM->TrackMonocular(cv_ptr->image, cv_ptr->header.stamp.toSec());
 }

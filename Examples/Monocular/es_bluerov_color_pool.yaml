@@ -4,17 +4,17 @@
 # Echosounder Parameters. Adjust them!
 #--------------------------------------------------------------------------------------------
 
-Echosounder.enable: 0
+Echosounder.enable: 1
 
 # Echosounder position relative to camera (in camera coordinate system)
-Echosounder.position.x: -0.133
-Echosounder.position.y: 0.045
-Echosounder.position.z: -0.057
+Echosounder.position.x: -0.166
+Echosounder.position.y: 0.101
+Echosounder.position.z: -0.049
 
 # Echosounder directional vector (in camera coordinate system)
-Echosounder.direction.x: 0.02386
-Echosounder.direction.y: 0.0655
-Echosounder.direction.z: 0.99756
+Echosounder.direction.x: 0.080
+Echosounder.direction.y: -0.146
+Echosounder.direction.z: 0.963
 
 # Echosounder angle (in radians)
 Echosounder.angle: 0.2618
@@ -24,28 +24,28 @@ Echosounder.angle: 0.2618
 #--------------------------------------------------------------------------------------------
 
 # Image frame size
-Camera.height: 540
-Camera.width: 720
+Camera.height: 1080
+Camera.width: 1920
 
 # Camera calibration and distortion parameters (OpenCV)
-Camera.fx: 581.736810
-Camera.fy: 583.204969
-Camera.cx: 280.269797
-Camera.cy: 354.628160
+Camera.fx: 1066.342505
+Camera.fy: 1065.381509
+Camera.cx: 940.432119
+Camera.cy: 552.184409
 
-Camera.k1: -0.311445
-Camera.k2: 0.121642
-Camera.p1: -0.000387
-Camera.p2: -0.000332
+Camera.k1: 0.018838
+Camera.k2: -0.006986
+Camera.p1: -0.003403
+Camera.p2: -0.002292
 
 # Projection matrix
-Camera.proj00: 540.809692
-Camera.proj02: 281.694430
-Camera.proj11: 510.309753
-Camera.proj12: 352.719297
+Camera.proj00: 1082.510864
+Camera.proj02: 934.229239
+Camera.proj11: 1082.330933
+Camera.proj12: 546.763104
 
 # Camera frames per second
-Camera.fps: 15.0
+Camera.fps: 30.0
 
 # Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
 Camera.RGB: 1

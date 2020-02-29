@@ -74,18 +74,23 @@ EchosounderIntegration::EchosounderIntegration(const std::string &strSettingFile
 void EchosounderIntegration::SetEchosounderDistance(const float &echosounderDistance, const int &echosounderConfidence)
 {
     // TO DO: does this need to be dvided because the image frame size is cut in half?
-    this->esDist = echosounderDistance / 2.0;
+    this->esDist = echosounderDistance;
     this->esConfidence = echosounderConfidence;
 
-    // Calculate echosounder radius here
-    this->esRadius = this->esDist * tan(this->esAngle);
+    std::cout << "\ndist: " << echosounderDistance << " confidence: " << echosounderConfidence << std::endl << std::endl;
 
-    // Calculate rectified echosounder direction vector point
-    cv::Point3f centerEsPoint = this->esPosition + this->esDist * this->esDirection;
-    this->rectifiedEsCenter = GetRectifiedPixelPoint(centerEsPoint);
+    if(IsEsConfident())
+    {
+        // Calculate echosounder radius here
+        this->esRadius = this->esDist * tan(this->esAngle);
 
-    cv::Point3f edgeCirclePoint = centerEsPoint + cv::Point3f(this->esRadius, 0.0, 0.0);
-    this->rectifiedEsEdge = GetRectifiedPixelPoint(edgeCirclePoint);
+        // Calculate rectified echosounder direction vector point
+        cv::Point3f centerEsPoint = this->esPosition + this->esDist * this->esDirection;
+        this->rectifiedEsCenter = GetRectifiedPixelPoint(centerEsPoint);
+
+        cv::Point3f edgeCirclePoint = centerEsPoint + cv::Point3f(this->esRadius, 0.0, 0.0);
+        this->rectifiedEsEdge = GetRectifiedPixelPoint(edgeCirclePoint);
+    }
 }
 
 
@@ -95,19 +100,23 @@ cv::Point2f EchosounderIntegration::GetRectifiedPixelPoint(const cv::Point3f &ca
     cv::Mat pointRectify = this->cameraProjection * pointMat;
     float pixel_x = pointRectify.at<float>(0,0) / pointRectify.at<float>(2,0);
     float pixel_y =  pointRectify.at<float>(1,0) / pointRectify.at<float>(2,0);
+    std::cout << "ES PROJECTED: " << pixel_x << " " << pixel_y << std::endl;
     return cv::Point2f(pixel_x, pixel_y);
 }
 
 
 bool EchosounderIntegration::MatchEchosounderReading(const cv::KeyPoint &potentialFeaturePoint, const int &imageRows)
 {
-    float imageResize = this->originalHeight / imageRows;
+    // float imageResize = this->originalHeight / imageRows;
+    //
+    // cv::Point2f resizeEsCenter = this->rectifiedEsCenter / imageResize;
+    // cv::Point2f resizeEsEdge = this->rectifiedEsEdge / imageResize;
 
-    cv::Point2f resizeEsCenter = this->rectifiedEsCenter / imageResize;
-    cv::Point2f resizeEsEdge = this->rectifiedEsEdge / imageResize;
+    // float rectifiedRadius = resizeEsEdge.x - resizeEsCenter.x;
+    // float distBetweenPoints = sqrt(pow(potentialFeaturePoint.pt.x - resizeEsCenter.x, 2) + pow(potentialFeaturePoint.pt.y - resizeEsCenter.y, 2));
 
-    float rectifiedRadius = resizeEsEdge.x - resizeEsCenter.x;
-    float distBetweenPoints = sqrt(pow(potentialFeaturePoint.pt.x - resizeEsCenter.x, 2) + pow(potentialFeaturePoint.pt.y - resizeEsCenter.y, 2));
+    float rectifiedRadius = this->rectifiedEsEdge.x - this->rectifiedEsCenter.x;
+    float distBetweenPoints = sqrt(pow(potentialFeaturePoint.pt.x - this->rectifiedEsCenter.x, 2) + pow(potentialFeaturePoint.pt.y - this->rectifiedEsCenter.y, 2));
 
     if(distBetweenPoints <= rectifiedRadius)
     {

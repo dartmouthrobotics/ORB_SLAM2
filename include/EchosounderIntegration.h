@@ -24,7 +24,7 @@ public:
 
     float GetEchosounderDistance(){return esDist;}
 
-    bool IsEsConfident(){return isEchosounderUsed && esConfidence >= threshConfidence;}
+    bool IsEsConfident(){return isEchosounderUsed && esDist > 0.0 && esConfidence >= threshConfidence;}
 
     void SaveEsEdgeConstraint(const int &echosounderMatchIndex){this->esTargetMapIndex = echosounderMatchIndex;}
 
